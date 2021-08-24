@@ -1,8 +1,5 @@
 pipeline {
     agent any
-    environment {
-        DOCKER = credentials('docker-repository-credentials')
-    }
     stages {
         stage('Checkout') {
             steps {
@@ -11,19 +8,13 @@ pipeline {
         }
         stage('Build Image') {
             steps {
-                sh "sudo docker build -f Dockerfile -t schofr/cronagent ."
-            }
-        }
-        stage('Push Image') {
-            steps {
-                sh "sudo docker login --username ${DOCKER_USR} --password ${DOCKER_PSW}"
-                sh "sudo docker push schofr/cronagent"
-                sh "echo docker.io/schofr/cronagent > sysdig_secure_images"
+                sh "docker build -f Dockerfile -t ${params.DOCKER_REPOSITORY} ."
+                sh "echo ${params.DOCKER_REPOSITORY} > sysdig_secure_images"
             }
         }
         stage('Scanning Image') {
             steps {
-                sysdigSecure 'sysdig_secure_images'
+            sysdig engineCredentialsId: 'sysdig-secure-api-credentials', name: 'sysdig_secure_images', inlineScanning: true
             }
         }
    }
